@@ -3,7 +3,7 @@
 # Compila o gerador de entradas e cria as listas .in que ainda nao existem.
 # Chamado automaticamente pelo implementacao.sh, mas pode rodar sozinho.
 #
-# Uso: ./criacao_lista.sh [opcoes]
+# Uso: scripts/criacao_lista.sh [opcoes]
 #   -t, --tamanhos     "10 100 1000"   (padrao: a lista de TAMANHOS_PADRAO)
 #   -f, --forcar       regera lista ja existente
 #   -h, --ajuda
@@ -44,7 +44,8 @@ while [ $# -gt 0 ]; do
 done
 
 
-SCRIPT_DIR=$(dirname "$0")
+# os scripts ficam em scripts/, mas trabalham a partir da raiz do repositorio
+SCRIPT_DIR=$(dirname "$0")/..
 
 if ! cd "$SCRIPT_DIR"; then
     echo "Erro ao alterar para o diretorio $SCRIPT_DIR"

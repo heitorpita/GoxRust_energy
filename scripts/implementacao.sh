@@ -3,7 +3,7 @@
 # Executa os algoritmos de ordenacao sobre as listas .in medindo energia com o
 # perf, gerando um csv por (algoritmo, tamanho, execucao).
 #
-# Uso: ./implementacao.sh [opcoes]
+# Uso: scripts/implementacao.sh [opcoes]
 #   -a, --algoritmo    "bolha insertion" | bubble | todos   (padrao: todos)
 #   -t, --tamanhos     "10 100 1000"               (padrao: todos os .in achados)
 #   -r, --repeticoes   N                           (padrao: 1)
@@ -25,15 +25,15 @@ declare -a CSV_TERMS
 declare -a FOLDERS_TERMS
 declare -a SCRIPT_FILES
 
-# arrays paralelos: termo do csv, pasta e script de cada algoritmo
+# arrays paralelos: termo do csv, pasta e fonte Go de cada algoritmo
 CSV_TERMS=("bolha"        "insertion"    "bolha_better"     "insertion_better")
 FOLDERS_TERMS=("bubble"   "insert"       "bubble"           "insert")
-SCRIPT_FILES=("bubble_sort.py" "insertion.py" "bubble_better.py" "insertion_better.py")
+SCRIPT_FILES=("bubble_sort.go" "insertion.go" "bubble_better.go" "insertion_better.go")
 
 PASTA_LISTAS="geracoes_listas"
-SCRIPT_LISTAS="criacao_lista.sh"
+SCRIPT_LISTAS="scripts/criacao_lista.sh"
 PREFIXO_LISTA="lista"
-INTERPRETADOR="python3"
+COMPILADOR="go"
 
 EVENTOS="power/energy-pkg/,duration_time,user_time,system_time"
 
@@ -80,7 +80,8 @@ if ! [[ $TEMPO_LIMITE =~ ^[0-9]+$ ]]; then
 fi
 
 
-SCRIPT_DIR=$(dirname "$0")
+# os scripts ficam em scripts/, mas trabalham a partir da raiz do repositorio
+SCRIPT_DIR=$(dirname "$0")/..
 
 if cd "$SCRIPT_DIR"; then
     echo "Diretorio alterado para $(pwd)"
@@ -89,7 +90,7 @@ else
     exit 1
 fi
 
-for programa in perf "$INTERPRETADOR"; do
+for programa in perf "$COMPILADOR"; do
     if ! command -v "$programa" > /dev/null; then
         echo "Erro: '$programa' nao encontrado no PATH"
         exit 1
@@ -276,6 +277,21 @@ proxima_execucao() {
 }
 
 
+# compila o fonte Go para um binario ao lado dele (bubble/bubble_sort.go -> bubble/bubble_sort);
+# recompila so quando o binario nao existe ou esta mais velho que o fonte.
+# a compilacao fica fora do perf para nao entrar na medicao
+compila() {
+    local fonte=$1 binario=$2
+
+    if [ -x "$binario" ] && [ ! "$fonte" -nt "$binario" ]; then
+        return 0
+    fi
+
+    echo "Compilando $fonte -> $binario"
+    "$COMPILADOR" build -o "$binario" "$fonte"
+}
+
+
 # o timestamp do sudo expira (~15 min) e uma ordenacao longa passa disso; renova
 # aqui, onde o stdin ainda e o terminal, antes de cada uso privilegiado
 renova_sudo() {
@@ -308,6 +324,14 @@ for indice in "${INDICES[@]}"; do
         continue
     fi
 
+    binario="$pasta/${script%.go}"
+
+    if ! compila "$pasta/$script" "$binario"; then
+        echo "   ERRO: falha ao compilar '$pasta/$script', pulando '$termo'"
+        falhas=$((falhas + 1))
+        continue
+    fi
+
     mkdir -p "$pasta"
 
     for tamanho in "${LISTA_TAMANHOS[@]}"; do
@@ -337,7 +361,7 @@ for indice in "${INDICES[@]}"; do
 
             comando=($PREFIXO_PERF perf stat -x';' $ESCOPO -o "$saida" -e "$EVENTOS")
             [ "$TEMPO_LIMITE" -gt 0 ] && comando+=(timeout --signal=TERM "$TEMPO_LIMITE")
-            comando+=("$INTERPRETADOR" "$pasta/$script")
+            comando+=("./$binario")
 
             renova_sudo
 

@@ -2,7 +2,7 @@
 
 # Consolida as medicoes do "perf stat -x';'" (bubble e insertion) em um unico csv.
 #
-# Uso: ./medicao.sh [arquivo_de_saida.csv]
+# Uso: scripts/medicao.sh [arquivo_de_saida.csv]
 #   -h, --ajuda   mostra esta ajuda
 
 set -u
@@ -45,7 +45,8 @@ if [ $# -gt 1 ]; then
 fi
 
 
-SCRIPT_DIR=$(dirname "$0")
+# os scripts ficam em scripts/, mas trabalham a partir da raiz do repositorio
+SCRIPT_DIR=$(dirname "$0")/..
 
 if cd "$SCRIPT_DIR"; then
     echo "Diretorio alterado para $(pwd)"
