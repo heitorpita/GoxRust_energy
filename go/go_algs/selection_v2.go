@@ -28,7 +28,7 @@ func input() string {
 
 var sorted = []int{}
 
-func insertion(numbers []int) {
+func selection(numbers []int) {
 	if len(numbers) < 2 {
 		fmt.Println(numbers)
 		return
@@ -67,5 +67,5 @@ func main() {
 		lista_completa[v] = valor
 	}
 
-	insertion(lista_completa)
+	selection(lista_completa)
 }

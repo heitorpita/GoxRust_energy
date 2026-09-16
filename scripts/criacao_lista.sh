@@ -53,6 +53,18 @@ if ! cd "$SCRIPT_DIR"; then
 fi
 
 
+# rodando como "sudo scripts/...": os arquivos criados voltam para quem chamou o sudo
+DONO=""
+if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_UID:-}" ]; then
+    DONO="$SUDO_UID:${SUDO_GID:-$SUDO_UID}"
+fi
+
+devolve_dono() {
+    [ -n "$DONO" ] || return 0
+    chown "$DONO" "$@" 2> /dev/null
+}
+
+
 declare -a LISTA_TAMANHOS
 LISTA_TAMANHOS=()
 
@@ -72,6 +84,7 @@ mapfile -t LISTA_TAMANHOS < <(printf '%s\n' "${LISTA_TAMANHOS[@]}" | sort -n -u)
 
 
 mkdir -p "$PASTA_LISTAS"
+devolve_dono "$PASTA_LISTAS"
 
 if ! cd "$PASTA_LISTAS"; then
     echo "Erro ao entrar em '$PASTA_LISTAS'"
@@ -96,6 +109,8 @@ if [ ! -x "$BINARIO_GERADOR" ] || [ "$FONTE_GERADOR" -nt "$BINARIO_GERADOR" ]; t
         echo "Erro: falha ao compilar '$FONTE_GERADOR'"
         exit 1
     fi
+
+    devolve_dono "$BINARIO_GERADOR"
 fi
 
 
@@ -128,6 +143,7 @@ for tamanho in "${LISTA_TAMANHOS[@]}"; do
         continue
     fi
 
+    devolve_dono "$arquivo"
     criadas=$((criadas + 1))
 done
 

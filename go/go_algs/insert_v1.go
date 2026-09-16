@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -19,23 +18,22 @@ func input() string {
 	return strings.TrimSuffix(linha, "\n")
 }
 
-func insertion(numbers []int) {
-	for i := range len(numbers) {
-		n_index, n_min := min_found(numbers, i)
-		aux := numbers[i]
-		numbers[i] = n_min
-		numbers[n_index] = aux
+func insertionSort(numbers []int) {
+	for i:= 1; i < len(numbers); i++ {
+		
+		j := i;
+
+		for j > 0 && numbers[j] < numbers[j-1] {
+			aux := numbers[j]
+			numbers[j] = numbers[j - 1]
+			numbers[j - 1] = aux
+			j--;
+		}
 	}
 
 	fmt.Println(numbers)
 }
 
-func min_found(original_vector []int, position int) (int, int) {
-	n_min := slices.Min(original_vector[position:])
-	index := slices.Index(original_vector[position:], n_min) + position
-
-	return index, n_min
-}
 
 func main() {
 	n := input()
@@ -53,5 +51,5 @@ func main() {
 		lista_completa[v] = valor
 	}
 
-	insertion(lista_completa)
+	insertionSort(lista_completa)
 }

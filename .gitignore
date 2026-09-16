@@ -1,13 +1,8 @@
 # medicoes
-.csv
+*.csv
 
 # binarios compilados pelos scripts
-# Go: ficam ao lado do fonte e nao tem extensao (go/bubble/bubble_v1)
-go/**/*
-!go/**/
-!go/**/*.*
-
-# Rust
+go/go_bin/
 rust/rust_bin/
 
 # gerador das listas (compilado do geraEntrada.cpp)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"container/heap"
 	"fmt"
 	"os"
 	"strconv"
@@ -10,7 +11,9 @@ import (
 
 var leitor = bufio.NewReader(os.Stdin)
 
+
 func input() string {
+	
 	linha, err := leitor.ReadString('\n')
 	if err != nil && linha == "" {
 		panic(err)
@@ -18,24 +21,35 @@ func input() string {
 	return strings.TrimSuffix(linha, "\n")
 }
 
-func insert(numbers []int) {
-	for range numbers {
-		
-		for j := 0; j < len(numbers)-1; j++ {
-			if numbers[j] > numbers[j+1] {
-				aux := numbers[j]
-				numbers[j] = numbers[j+1]
-				numbers[j+1] = aux
-			}
-		}
+type IntHeap []int 
+func (h IntHeap) Len() int {return len(h)}
+func (h IntHeap) Less(i, j int) bool {return h[i] > h[j]}
+func (h IntHeap) Swap(i, j int) {h[i], h[j] = h[j], h[i]}
+func (h *IntHeap) Push(x any) {
+	*h = append(*h, x.(int))
+}
+
+
+func (h *IntHeap) Pop() any {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
+func selection_heap(numbers []int) {
+	h := IntHeap(numbers)
+	heap.Init(&h);
+
+	for i := 0; i < len(numbers); i++ {
+		heap.Pop(&h)
 	}
 
 	fmt.Println(numbers)
 }
 
-func min_found(numbers []int, start int) int {
-	var n_min int = min(numbers[start], numbers[start:])
-}
+
 
 func main() {
 	n := input()
@@ -53,5 +67,5 @@ func main() {
 		lista_completa[v] = valor
 	}
 
-	bubble(lista_completa)
+	selection_heap(lista_completa)
 }

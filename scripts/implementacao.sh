@@ -4,8 +4,8 @@
 # medindo energia com o perf, gerando um csv por (algoritmo, tamanho, execucao).
 #
 # Uso: scripts/implementacao.sh [opcoes] [algoritmo ...]
-#   algoritmo          nome do csv (bolha_rs), fonte (go/bubble/bubble_v1.go ou bubble_v1),
-#                      pasta (go/bubble ou bubble), linguagem (go, rust) ou todos (padrao)
+#   algoritmo          nome do csv (bolha_rs), fonte (go/go_algs/bubble_v1.go ou bubble_v1),
+#                      pasta (go/go_bubble ou go_bubble), linguagem (go, rust) ou todos (padrao)
 #   -a, --algoritmo    "bolha selection_rs" (o mesmo que passar os algoritmos no fim)
 #   -L, --listar       mostra os algoritmos configurados e sai
 #   -t, --tamanhos     "10 100 1000"               (padrao: todos os .in achados)
@@ -34,23 +34,23 @@ declare -a SOURCE_FILES
 CSV_TERMS=(
     "bolha"                         "bolha_better"
     "insertion"
-    "selection"                     "selection_better"              "selection_nlogn"
+    "selection"                     "selection_better"
     "bolha_rs"                      "bolha_rs_better"
     "insertion_rs"                  "insertion_rs_better"
     "selection_rs"                  "selection_rs_better"
 )
 FOLDERS_TERMS=(
-    "go/bubble"                     "go/bubble"
-    "go/insert"
-    "go/selection"                  "go/selection"                  "go/selection"
+    "go/go_bubble"                  "go/go_bubble"
+    "go/go_insert"
+    "go/go_selection"               "go/go_selection"
     "rust/rust_bubble"              "rust/rust_bubble"
     "rust/rust_insert"              "rust/rust_insert"
     "rust/rust_selection"           "rust/rust_selection"
 )
 SOURCE_FILES=(
-    "go/bubble/bubble_v1.go"        "go/bubble/bubble_v2.go"
-    "go/insert/insert_v1.go"
-    "go/selection/selection_v1.go"  "go/selection/selection_v2.go"  "go/selection/selection_nlogn.go"
+    "go/go_algs/bubble_v1.go"       "go/go_algs/bubble_v2.go"
+    "go/go_algs/insert_v1.go"
+    "go/go_algs/selection_v1.go"    "go/go_algs/selection_v2.go"
     "rust/rust_algs/bubble_sort_v1.rs"    "rust/rust_algs/bubble_sort_v2.rs"
     "rust/rust_algs/insertion_sort_v1.rs" "rust/rust_algs/insertion_sort_v2.rs"
     "rust/rust_algs/selection_sort_v1.rs" "rust/rust_algs/selection_sort_v2.rs"
@@ -60,15 +60,19 @@ PASTA_LISTAS="geracoes_listas"
 SCRIPT_LISTAS="scripts/criacao_lista.sh"
 PREFIXO_LISTA="lista"
 
-# Go: o binario fica ao lado do fonte (go/bubble/bubble_v1.go -> go/bubble/bubble_v1)
+# Go: os binarios ficam em go/go_bin/ (go/go_algs/bubble_v1.go -> go/go_bin/bubble_v1)
 COMPILADOR_GO="go"
+PASTA_BINARIOS_GO="go/go_bin"
 
 # Rust: os binarios ficam em rust/rust_bin/ (rust/rust_algs/bubble_sort_v1.rs -> rust/rust_bin/bubble_sort_v1)
 COMPILADOR_RUST="rustc"
 FLAGS_COMPILACAO_RUST="-O -C debuginfo=0"
 PASTA_BINARIOS_RUST="rust/rust_bin"
 
-EVENTOS="power/energy-pkg/,duration_time,user_time,system_time"
+# com -a (necessario para a energia) os eventos user_time/system_time do perf somam
+# todos os nucleos da maquina; o tempo de cpu do algoritmo vem do GNU time
+EVENTOS="power/energy-pkg/,duration_time"
+TEMPO_PROCESSO="/usr/bin/time"
 
 
 mostra_ajuda() {
@@ -91,7 +95,7 @@ binario_de() {
     local fonte=${SOURCE_FILES[$1]}
 
     case "$fonte" in
-        *.go) echo "${fonte%.go}" ;;
+        *.go) echo "$PASTA_BINARIOS_GO/$(basename "$fonte" .go)" ;;
         *.rs) echo "$PASTA_BINARIOS_RUST/$(basename "$fonte" .rs)" ;;
     esac
 }
@@ -170,6 +174,23 @@ else
 fi
 
 
+# rodando como "sudo scripts/...": os arquivos criados voltam para quem chamou o sudo
+DONO=""
+if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_UID:-}" ]; then
+    DONO="$SUDO_UID:${SUDO_GID:-$SUDO_UID}"
+fi
+
+devolve_dono() {
+    [ -n "$DONO" ] || return 0
+    chown "$DONO" "$@" 2> /dev/null
+}
+
+if [ -n "$DONO" ]; then
+    echo "Aviso: rodando com sudo; prefira rodar sem sudo (o script pede a senha so para o perf)."
+    echo "       Os arquivos criados serao devolvidos a $DONO."
+fi
+
+
 # indices dos algoritmos pedidos
 declare -a INDICES
 INDICES=()
@@ -208,6 +229,11 @@ echo "Algoritmos: $(for indice in "${INDICES[@]}"; do printf '%s ' "${CSV_TERMS[
 
 if ! command -v perf > /dev/null; then
     echo "Erro: 'perf' nao encontrado no PATH"
+    exit 1
+fi
+
+if [ ! -x "$TEMPO_PROCESSO" ]; then
+    echo "Erro: '$TEMPO_PROCESSO' (GNU time) nao encontrado; instale o pacote 'time'"
     exit 1
 fi
 
@@ -295,6 +321,7 @@ if [ "$SEM_COMPILAR" -eq 0 ]; then
         fi
 
         mkdir -p "$(dirname "$binario")"
+        devolve_dono "$(dirname "$binario")"
 
         echo "-> ${comando_compilacao[*]}"
 
@@ -305,6 +332,7 @@ if [ "$SEM_COMPILAR" -eq 0 ]; then
             continue
         fi
 
+        devolve_dono "$binario"
         compilados=$((compilados + 1))
     done
 
@@ -472,6 +500,7 @@ for indice in "${INDICES[@]}"; do
     fi
 
     mkdir -p "$pasta"
+    devolve_dono "$pasta"
 
     for tamanho in "${LISTA_TAMANHOS[@]}"; do
         entrada="$PASTA_LISTAS/${PREFIXO_LISTA}_${tamanho}.in"
@@ -498,7 +527,13 @@ for indice in "${INDICES[@]}"; do
 
             echo "-> $termo | n=$tamanho | exec $numero"
 
+            # o GNU time fica por fora do timeout para somar o tempo de cpu do algoritmo
+            # mesmo quando ele e interrompido
+            tempo="${saida%.csv}.tempo"
+            rm -f "$tempo" 2> /dev/null
+
             comando=($PREFIXO_PERF perf stat -x';' $ESCOPO -o "$saida" -e "$EVENTOS")
+            comando+=("$TEMPO_PROCESSO" -f '%U;%S' -o "$tempo")
             [ "$TEMPO_LIMITE" -gt 0 ] && comando+=(timeout --signal=TERM "$TEMPO_LIMITE")
             comando+=("./$binario")
 
@@ -509,17 +544,34 @@ for indice in "${INDICES[@]}"; do
             estado=$?
             decorrido=$((SECONDS - inicio))
 
-            # o perf escreve o csv como root quando roda sob sudo
+            # o perf e o GNU time escrevem como root quando rodam sob sudo
             if [ -n "$PREFIXO_PERF" ] && [ -e "$saida" ]; then
                 renova_sudo
                 sudo -n chown "$(id -u):$(id -g)" "$saida"
+                [ -e "$tempo" ] && sudo -n chown "$(id -u):$(id -g)" "$tempo"
             fi
+            [ -e "$saida" ] && devolve_dono "$saida"
 
             if [ ! -e "$saida" ]; then
                 echo "   ERRO: perf nao gerou '$saida'"
+                rm -f "$tempo" 2> /dev/null
                 falhas=$((falhas + 1))
                 continue
             fi
+
+            # anexa ao csv do perf o tempo de cpu do algoritmo; a ultima linha do GNU time
+            # e "user;system" em segundos (antes dela pode vir o aviso de codigo de saida)
+            linha_tempo=$(tail -n 1 "$tempo" 2> /dev/null)
+
+            if [[ $linha_tempo =~ ^([0-9]+\.[0-9]+)\;([0-9]+\.[0-9]+)$ ]]; then
+                marca "$saida" "# tempo de cpu do processo medido (GNU time, resolucao de 10 ms)"
+                marca "$saida" "${BASH_REMATCH[1]};s;processo_user_time;;;;"
+                marca "$saida" "${BASH_REMATCH[2]};s;processo_system_time;;;;"
+            else
+                echo "   aviso: tempo de cpu do processo nao registrado ('$tempo')"
+            fi
+
+            rm -f "$tempo" 2> /dev/null
 
             if [ "$estado" -eq 124 ]; then
                 # timeout: o perf ainda reporta os contadores do trecho executado
