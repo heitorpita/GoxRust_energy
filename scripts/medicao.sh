@@ -19,7 +19,7 @@ declare -a FOLDERS_TERMS
 # arrays paralelos: termo do csv e pasta de cada algoritmo
 CSV_TERMS=(
     "bolha"               "bolha_better"
-    "insertion"
+    "insertion"           "insertion_better"
     "selection"           "selection_better"
     "bolha_rs"            "bolha_rs_better"
     "insertion_rs"        "insertion_rs_better"
@@ -27,7 +27,7 @@ CSV_TERMS=(
 )
 FOLDERS_TERMS=(
     "go/go_bubble"        "go/go_bubble"
-    "go/go_insert"
+    "go/go_insert"        "go/go_insert"
     "go/go_selection"     "go/go_selection"
     "rust/rust_bubble"    "rust/rust_bubble"
     "rust/rust_insert"    "rust/rust_insert"

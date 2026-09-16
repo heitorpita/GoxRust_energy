@@ -33,7 +33,7 @@ declare -a SOURCE_FILES
 # a linguagem sai da extensao do fonte (.go ou .rs)
 CSV_TERMS=(
     "bolha"                         "bolha_better"
-    "insertion"
+    "insertion"                     "insertion_better"
     "selection"                     "selection_better"
     "bolha_rs"                      "bolha_rs_better"
     "insertion_rs"                  "insertion_rs_better"
@@ -41,7 +41,7 @@ CSV_TERMS=(
 )
 FOLDERS_TERMS=(
     "go/go_bubble"                  "go/go_bubble"
-    "go/go_insert"
+    "go/go_insert"                  "go/go_insert"
     "go/go_selection"               "go/go_selection"
     "rust/rust_bubble"              "rust/rust_bubble"
     "rust/rust_insert"              "rust/rust_insert"
@@ -49,7 +49,7 @@ FOLDERS_TERMS=(
 )
 SOURCE_FILES=(
     "go/go_algs/bubble_v1.go"       "go/go_algs/bubble_v2.go"
-    "go/go_algs/insert_v1.go"
+    "go/go_algs/insert_v1.go"       "go/go_algs/insert_v2.go"
     "go/go_algs/selection_v1.go"    "go/go_algs/selection_v2.go"
     "rust/rust_algs/bubble_sort_v1.rs"    "rust/rust_algs/bubble_sort_v2.rs"
     "rust/rust_algs/insertion_sort_v1.rs" "rust/rust_algs/insertion_sort_v2.rs"
