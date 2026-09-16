@@ -1,15 +1,19 @@
 #!/bin/bash
 
-# Executa os algoritmos de ordenacao sobre as listas .in medindo energia com o
-# perf, gerando um csv por (algoritmo, tamanho, execucao).
+# Compila os algoritmos de ordenacao (Go e Rust) e os executa sobre as listas .in
+# medindo energia com o perf, gerando um csv por (algoritmo, tamanho, execucao).
 #
-# Uso: scripts/implementacao.sh [opcoes]
-#   -a, --algoritmo    "bolha insertion" | bubble | todos   (padrao: todos)
+# Uso: scripts/implementacao.sh [opcoes] [algoritmo ...]
+#   algoritmo          nome do csv (bolha_rs), fonte (go/bubble/bubble_v1.go ou bubble_v1),
+#                      pasta (go/bubble ou bubble), linguagem (go, rust) ou todos (padrao)
+#   -a, --algoritmo    "bolha selection_rs" (o mesmo que passar os algoritmos no fim)
+#   -L, --listar       mostra os algoritmos configurados e sai
 #   -t, --tamanhos     "10 100 1000"               (padrao: todos os .in achados)
 #   -r, --repeticoes   N                           (padrao: 1)
 #   -T, --timeout      segundos por execucao       (padrao: 0 = sem limite)
 #   -s, --sem-sudo     nao eleva privilegio (energia sai <not supported>)
 #   -l, --sem-listas   nao chama o criacao_lista.sh antes de medir
+#   -C, --sem-compilar nao recompila os fontes .go/.rs antes de medir
 #   -c, --limpar       apaga os csv dos algoritmos/tamanhos escolhidos e recomeca do exec01
 #   -y, --sim          responde "sim" a confirmacao do --limpar
 #   -f, --forcar       refaz csv ja existente
@@ -23,51 +27,126 @@ export LC_ALL=C
 
 declare -a CSV_TERMS
 declare -a FOLDERS_TERMS
-declare -a SCRIPT_FILES
+declare -a SOURCE_FILES
 
-# arrays paralelos: termo do csv, pasta e fonte Go de cada algoritmo
-CSV_TERMS=("bolha"        "insertion"    "bolha_better"     "insertion_better")
-FOLDERS_TERMS=("bubble"   "insert"       "bubble"           "insert")
-SCRIPT_FILES=("bubble_sort.go" "insertion.go" "bubble_better.go" "insertion_better.go")
+# arrays paralelos: termo do csv, pasta de saida dos csv e fonte de cada algoritmo;
+# a linguagem sai da extensao do fonte (.go ou .rs)
+CSV_TERMS=(
+    "bolha"                         "bolha_better"
+    "insertion"
+    "selection"                     "selection_better"              "selection_nlogn"
+    "bolha_rs"                      "bolha_rs_better"
+    "insertion_rs"                  "insertion_rs_better"
+    "selection_rs"                  "selection_rs_better"
+)
+FOLDERS_TERMS=(
+    "go/bubble"                     "go/bubble"
+    "go/insert"
+    "go/selection"                  "go/selection"                  "go/selection"
+    "rust/rust_bubble"              "rust/rust_bubble"
+    "rust/rust_insert"              "rust/rust_insert"
+    "rust/rust_selection"           "rust/rust_selection"
+)
+SOURCE_FILES=(
+    "go/bubble/bubble_v1.go"        "go/bubble/bubble_v2.go"
+    "go/insert/insert_v1.go"
+    "go/selection/selection_v1.go"  "go/selection/selection_v2.go"  "go/selection/selection_nlogn.go"
+    "rust/rust_algs/bubble_sort_v1.rs"    "rust/rust_algs/bubble_sort_v2.rs"
+    "rust/rust_algs/insertion_sort_v1.rs" "rust/rust_algs/insertion_sort_v2.rs"
+    "rust/rust_algs/selection_sort_v1.rs" "rust/rust_algs/selection_sort_v2.rs"
+)
 
 PASTA_LISTAS="geracoes_listas"
 SCRIPT_LISTAS="scripts/criacao_lista.sh"
 PREFIXO_LISTA="lista"
-COMPILADOR="go"
+
+# Go: o binario fica ao lado do fonte (go/bubble/bubble_v1.go -> go/bubble/bubble_v1)
+COMPILADOR_GO="go"
+
+# Rust: os binarios ficam em rust/rust_bin/ (rust/rust_algs/bubble_sort_v1.rs -> rust/rust_bin/bubble_sort_v1)
+COMPILADOR_RUST="rustc"
+FLAGS_COMPILACAO_RUST="-O -C debuginfo=0"
+PASTA_BINARIOS_RUST="rust/rust_bin"
 
 EVENTOS="power/energy-pkg/,duration_time,user_time,system_time"
 
 
 mostra_ajuda() {
-    sed -n '3,16p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 
-ALGORITMO="todos"
+# linguagem de cada algoritmo, pela extensao do fonte
+linguagem_de() {
+    case "${SOURCE_FILES[$1]}" in
+        *.go) echo "go" ;;
+        *.rs) echo "rust" ;;
+        *)    echo "desconhecida" ;;
+    esac
+}
+
+
+# nome do binario de cada fonte
+binario_de() {
+    local fonte=${SOURCE_FILES[$1]}
+
+    case "$fonte" in
+        *.go) echo "${fonte%.go}" ;;
+        *.rs) echo "$PASTA_BINARIOS_RUST/$(basename "$fonte" .rs)" ;;
+    esac
+}
+
+
+lista_algoritmos() {
+    local indice
+
+    printf '%-22s %-6s %-22s %s\n' "ALGORITMO" "LING" "PASTA DOS CSV" "FONTE"
+    for indice in "${!CSV_TERMS[@]}"; do
+        printf '%-22s %-6s %-22s %s\n' "${CSV_TERMS[$indice]}" "$(linguagem_de "$indice")" \
+            "${FOLDERS_TERMS[$indice]}" "${SOURCE_FILES[$indice]}"
+    done
+}
+
+
+ALGORITMO=""
 TAMANHOS=""
 REPETICOES=1
 TEMPO_LIMITE=0
 SEM_SUDO=0
 SEM_LISTAS=0
+SEM_COMPILAR=0
 LIMPAR=0
 CONFIRMADO=0
 FORCAR=0
+LISTAR=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        -a|--algoritmo)   ALGORITMO=${2:-}; shift 2 ;;
+        -a|--algoritmo)   ALGORITMO="$ALGORITMO ${2:-}"; shift 2 ;;
+        -L|--listar)      LISTAR=1; shift ;;
         -t|--tamanhos)    TAMANHOS=${2:-}; shift 2 ;;
         -r|--repeticoes)  REPETICOES=${2:-}; shift 2 ;;
         -T|--timeout)     TEMPO_LIMITE=${2:-}; shift 2 ;;
         -s|--sem-sudo)    SEM_SUDO=1; shift ;;
         -l|--sem-listas)  SEM_LISTAS=1; shift ;;
+        -C|--sem-compilar) SEM_COMPILAR=1; shift ;;
         -c|--limpar)      LIMPAR=1; shift ;;
         -y|--sim)         CONFIRMADO=1; shift ;;
         -f|--forcar)      FORCAR=1; shift ;;
         -h|--ajuda)       mostra_ajuda; exit 0 ;;
-        *) echo "Opcao desconhecida: $1"; mostra_ajuda; exit 1 ;;
+        -*) echo "Opcao desconhecida: $1"; mostra_ajuda; exit 1 ;;
+        # argumentos sem opcao sao algoritmos a medir
+        *)                ALGORITMO="$ALGORITMO $1"; shift ;;
     esac
 done
+
+if [ "$LISTAR" -eq 1 ]; then
+    lista_algoritmos
+    exit 0
+fi
+
+# sem algoritmo pedido, mede todos
+[ -n "${ALGORITMO// /}" ] || ALGORITMO="todos"
 
 if ! [[ $REPETICOES =~ ^[0-9]+$ ]] || [ "$REPETICOES" -lt 1 ]; then
     echo "Erro: --repeticoes deve ser um inteiro maior que zero"
@@ -90,12 +169,47 @@ else
     exit 1
 fi
 
-for programa in perf "$COMPILADOR"; do
-    if ! command -v "$programa" > /dev/null; then
-        echo "Erro: '$programa' nao encontrado no PATH"
+
+# indices dos algoritmos pedidos
+declare -a INDICES
+INDICES=()
+
+for pedido in $ALGORITMO; do
+    achou=0
+
+    # aceita o fonte com ./ na frente e a pasta com / no fim
+    pedido=${pedido#./}
+    pedido=${pedido%/}
+
+    for indice in "${!CSV_TERMS[@]}"; do
+        fonte=${SOURCE_FILES[$indice]}
+        pasta=${FOLDERS_TERMS[$indice]}
+        base_fonte=$(basename "$fonte")
+
+        case "$pedido" in
+            todos|"${CSV_TERMS[$indice]}"|"$(linguagem_de "$indice")"|"$fonte"|"$base_fonte"|"${base_fonte%.*}"|"$(dirname "$fonte")"|"$pasta"|"$(basename "$pasta")")
+                INDICES+=("$indice")
+                achou=1
+                ;;
+        esac
+    done
+
+    if [ "$achou" -eq 0 ]; then
+        echo "Erro: algoritmo '$pedido' desconhecido; os configurados sao:"
+        lista_algoritmos
         exit 1
     fi
 done
+
+mapfile -t INDICES < <(printf '%s\n' "${INDICES[@]}" | sort -n -u)
+
+echo "Algoritmos: $(for indice in "${INDICES[@]}"; do printf '%s ' "${CSV_TERMS[$indice]}"; done)"
+
+
+if ! command -v perf > /dev/null; then
+    echo "Erro: 'perf' nao encontrado no PATH"
+    exit 1
+fi
 
 
 # o contador power/energy-pkg/ so e lido com privilegio (ou perf_event_paranoid <= 0)
@@ -130,31 +244,72 @@ else
 fi
 
 
-# indices dos algoritmos pedidos
-declare -a INDICES
-INDICES=()
+geradas=0
+puladas=0
+falhas=0
 
-if [ "$ALGORITMO" = "todos" ]; then
-    for indice in "${!CSV_TERMS[@]}"; do INDICES+=("$indice"); done
-else
-    # aceita varios algoritmos ("bolha bolha_better") e tambem o nome da pasta
-    for pedido in $ALGORITMO; do
-        achou=0
+# algoritmos cujo fonte nao compilou; sao pulados na medicao para nao usar um binario antigo
+declare -A NAO_COMPILOU
+NAO_COMPILOU=()
 
-        for indice in "${!CSV_TERMS[@]}"; do
-            if [ "$pedido" = "${CSV_TERMS[$indice]}" ] || [ "$pedido" = "${FOLDERS_TERMS[$indice]}" ]; then
-                INDICES+=("$indice")
-                achou=1
-            fi
-        done
 
-        if [ "$achou" -eq 0 ]; then
-            echo "Erro: algoritmo '$pedido' desconhecido (use: ${CSV_TERMS[*]} ou todos)"
-            exit 1
+# compila os fontes dos algoritmos pedidos; so recompila o que nao tem binario ou
+# esta mais novo que ele. A compilacao fica fora do perf para nao entrar na medicao.
+# Um fonte que nao compila so tira o proprio algoritmo da medicao
+if [ "$SEM_COMPILAR" -eq 0 ]; then
+    echo
+    echo "Compilando os fontes..."
+
+    compilados=0
+    atualizados=0
+
+    for indice in "${INDICES[@]}"; do
+        termo=${CSV_TERMS[$indice]}
+        fonte=${SOURCE_FILES[$indice]}
+        binario=$(binario_de "$indice")
+
+        if [ ! -f "$fonte" ]; then
+            continue
         fi
+
+        if [ -x "$binario" ] && [ ! "$fonte" -nt "$binario" ]; then
+            atualizados=$((atualizados + 1))
+            continue
+        fi
+
+        case "$(linguagem_de "$indice")" in
+            go)   comando_compilacao=("$COMPILADOR_GO" build -o "$binario" "$fonte") ;;
+            rust) comando_compilacao=("$COMPILADOR_RUST" $FLAGS_COMPILACAO_RUST -o "$binario" "$fonte") ;;
+            *)    echo "   ERRO: linguagem desconhecida para '$fonte', pulando '$termo'"
+                  NAO_COMPILOU[$indice]=1
+                  falhas=$((falhas + 1))
+                  continue ;;
+        esac
+
+        if ! command -v "${comando_compilacao[0]}" > /dev/null; then
+            echo "   ERRO: '${comando_compilacao[0]}' nao encontrado no PATH, pulando '$termo'"
+            echo "         (use --sem-compilar se ja tem os binarios)"
+            NAO_COMPILOU[$indice]=1
+            falhas=$((falhas + 1))
+            continue
+        fi
+
+        mkdir -p "$(dirname "$binario")"
+
+        echo "-> ${comando_compilacao[*]}"
+
+        if ! "${comando_compilacao[@]}"; then
+            echo "   ERRO: falha ao compilar '$fonte', pulando '$termo'"
+            NAO_COMPILOU[$indice]=1
+            falhas=$((falhas + 1))
+            continue
+        fi
+
+        compilados=$((compilados + 1))
     done
 
-    mapfile -t INDICES < <(printf '%s\n' "${INDICES[@]}" | sort -n -u)
+    echo "Binarios compilados: $compilados | ja atualizados: $atualizados | falhas: ${#NAO_COMPILOU[@]}"
+    echo
 fi
 
 
@@ -277,21 +432,6 @@ proxima_execucao() {
 }
 
 
-# compila o fonte Go para um binario ao lado dele (bubble/bubble_sort.go -> bubble/bubble_sort);
-# recompila so quando o binario nao existe ou esta mais velho que o fonte.
-# a compilacao fica fora do perf para nao entrar na medicao
-compila() {
-    local fonte=$1 binario=$2
-
-    if [ -x "$binario" ] && [ ! "$fonte" -nt "$binario" ]; then
-        return 0
-    fi
-
-    echo "Compilando $fonte -> $binario"
-    "$COMPILADOR" build -o "$binario" "$fonte"
-}
-
-
 # o timestamp do sudo expira (~15 min) e uma ordenacao longa passa disso; renova
 # aqui, onde o stdin ainda e o terminal, antes de cada uso privilegiado
 renova_sudo() {
@@ -310,25 +450,24 @@ marca() {
 }
 
 
-geradas=0
-puladas=0
-falhas=0
-
 for indice in "${INDICES[@]}"; do
     termo=${CSV_TERMS[$indice]}
     pasta=${FOLDERS_TERMS[$indice]}
-    script=${SCRIPT_FILES[$indice]}
+    fonte=${SOURCE_FILES[$indice]}
+    binario=$(binario_de "$indice")
 
-    if [ ! -f "$pasta/$script" ]; then
-        echo "Aviso: '$pasta/$script' nao encontrado, pulando '$termo'"
+    if [ ! -f "$fonte" ]; then
+        echo "Aviso: '$fonte' nao encontrado, pulando '$termo'"
         continue
     fi
 
-    binario="$pasta/${script%.go}"
+    if [ -n "${NAO_COMPILOU[$indice]:-}" ]; then
+        echo "Aviso: '$fonte' nao compilou, pulando '$termo'"
+        continue
+    fi
 
-    if ! compila "$pasta/$script" "$binario"; then
-        echo "   ERRO: falha ao compilar '$pasta/$script', pulando '$termo'"
-        falhas=$((falhas + 1))
+    if [ ! -x "$binario" ]; then
+        echo "Aviso: binario '$binario' nao existe, pulando '$termo'"
         continue
     fi
 

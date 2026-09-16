@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Consolida as medicoes do "perf stat -x';'" (bubble e insertion) em um unico csv.
+# Consolida as medicoes do "perf stat -x';'" (Go e Rust) em um unico csv.
 #
 # Uso: scripts/medicao.sh [arquivo_de_saida.csv]
 #   -h, --ajuda   mostra esta ajuda
@@ -17,8 +17,22 @@ declare -a CSV_TERMS
 declare -a FOLDERS_TERMS
 
 # arrays paralelos: termo do csv e pasta de cada algoritmo
-CSV_TERMS=("bolha"      "insertion" "bolha_better" "insertion_better")
-FOLDERS_TERMS=("bubble" "insert"    "bubble"       "insert")
+CSV_TERMS=(
+    "bolha"               "bolha_better"
+    "insertion"
+    "selection"           "selection_better"     "selection_nlogn"
+    "bolha_rs"            "bolha_rs_better"
+    "insertion_rs"        "insertion_rs_better"
+    "selection_rs"        "selection_rs_better"
+)
+FOLDERS_TERMS=(
+    "go/bubble"           "go/bubble"
+    "go/insert"
+    "go/selection"        "go/selection"         "go/selection"
+    "rust/rust_bubble"    "rust/rust_bubble"
+    "rust/rust_insert"    "rust/rust_insert"
+    "rust/rust_selection" "rust/rust_selection"
+)
 
 # separador e decimal usados no csv gerado
 SAIDA_SEP=";"
