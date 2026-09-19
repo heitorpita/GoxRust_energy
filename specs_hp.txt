@@ -1,0 +1,54 @@
+===== SPECS HEITOR =====
+
+===== IDENTIFICAÇÃO =====
+       Icon name: computer-laptop
+         Chassis: laptop
+Operating System: Debian GNU/Linux 12 (bookworm)
+          Kernel: Linux 6.1.0-52-amd64
+    Architecture: x86-64
+  Hardware Model: <redigido> (notebook consumer, plataforma Broadwell-U 2015)
+
+
+===== CPU =====
+Arquitetura:            x86_64
+CPU(s):                 4 (2 núcleos físicos, 2 threads/núcleo)
+Nome do modelo:         Intel Core i5-5200U @ 2.20GHz
+Cache L1d/L1i:          64 KiB / 64 KiB (2 instâncias cada)
+Cache L2:               512 KiB (2 instâncias)
+Cache L3:               3 MiB (1 instância)
+Nós NUMA:               1 (CPUs 0-3)
+Mitigação L1tf:         PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+
+===== MEMÓRIA =====
+RAM total:              11 GiB
+Swap total:             976 MiB
+
+===== GOVERNOR / FREQUÊNCIA =====
+driver:                 intel_cpufreq
+governor:               schedutil
+freq min/max:           500000 / 2700000 kHz
+no_turbo (Intel):       0  (turbo ativo)
+SMT:                    on
+
+===== RAPL / POWERCAP =====
+domínios: intel-rapl:0 (package-0), :0:0 (core), :0:1 (uncore), :0:2 (dram)
+energy_uj legível por usuário comum: NÃO (todos os domínios)
+módulos: intel_rapl_msr intel_rapl_common rapl
+
+===== PERF =====
+perf version:           6.1.180
+perf_event_paranoid:    0
+eventos de energia:     4
+
+===== SO / TOOLCHAIN =====
+distro:   Debian GNU/Linux 12 (bookworm)
+kernel:   6.1.0-52-amd64
+gcc:      12.2.0
+g++:      12.2.0
+clang:    14.0.6
+go:       não instalado
+rustc:    1.94.0
+cargo:    1.94.0
+python3:  3.11.2
+
+
