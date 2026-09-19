@@ -1,0 +1,61 @@
+Caminho do hardware  Dispositivo     Classe         Descrição
+===============================================================
+                                     system         Inspiron 15 3511 (0AB0)
+/0                                   bus            07V0Y0
+/0/1                                 memory         1MiB BIOS
+/0/400                               processor      11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+/0/400/701                           memory         128KiB L1 cache
+/0/400/702                           memory         5MiB L2 cache
+/0/400/703                           memory         8MiB L3 cache
+/0/700                               memory         192KiB L1 cache
+/0/1000                              memory         8GiB Memória do sistema
+/0/1000/0                            memory         8GiB SODIMM DDR4 Síncrono 3200 MHz (0,3 ns)
+/0/1000/1                            memory         Project-Id-Version: lshwReport-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>PO-Revision-Date: 2013-04-07 17:30+0000Last-Translator: Neliton Pereira Jr. <nelitonpjr@gmail.com>Language-Team: Brazilian Portuguese <pt_BR@li.org>MIME-Version: 1.0Content-Type: text/plain; charset=UTF-8Content-Transfer-Encoding: 8bitX-Launchpad-Export-Date: 2026-09-05 11:18+0000X-Generator: Launchpad (build b0097495a28d09c3303dbd078ca616792464b9f2)Project-Id-Version: lshwReport-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>PO-Revision-Date: 2013-04-07 17:30+0000Last-Translator: Neliton Pereira Jr. <nelitonpjr@gmail.com>Language-Team: Brazilian Portuguese <pt_BR@li.org>MIME-Version: 1.0Content-Type: text/plain; charset=UTF-8Content-Transfer-Encoding: 8bitX-Launchpad-Export-Date: 2026-09-05 11:18+0000X-Generator: Launchpad (build b0097495a28d09c3303dbd078ca616792464b9f2) [vazio]
+/0/100                               bridge         11th Gen Core Processor Host Bridge/DRAM Registers
+/0/100/2             /dev/fb0        display        TigerLake-LP GT2 [Iris Xe Graphics]
+/0/100/4                             generic        TigerLake-LP Dynamic Tuning Processor Participant
+/0/100/a                             generic        Tigerlake Telemetry Aggregator Driver
+/0/100/14                            bus            Tiger Lake-LP USB 3.2 Gen 2x1 xHCI Host Controller
+/0/100/14/0          usb1            bus            xHCI Host Controller
+/0/100/14/0/5                        generic        Goodix USB2.0 MISC
+/0/100/14/0/6                        multimedia     Integrated_Webcam_HD
+/0/100/14/0/a                        communication  Bluetooth 9460/9560 Jefferson Peak (JfP)
+/0/100/14/1          usb2            bus            xHCI Host Controller
+/0/100/14.2                          memory         RAM memory
+/0/100/14.3          wlp0s20f3       network        Wi-Fi 6 AX201
+/0/100/15                            bus            Tiger Lake-LP Serial IO I2C Controller #0
+/0/100/15.1                          bus            Tiger Lake-LP Serial IO I2C Controller #1
+/0/100/16                            communication  Tiger Lake-LP Management Engine Interface
+/0/100/17                            storage        Tiger Lake-LP SATA Controller
+/0/100/1c                            bridge         Tiger Lake-LP PCI Express Root Port #5
+/0/100/1c/0          /dev/nvme0      storage        SM2P41C3 NVMe ADATA 256GB
+/0/100/1c/0/0        hwmon2          disk           NVMe disk
+/0/100/1c/0/2        /dev/ng0n1      disk           NVMe disk
+/0/100/1c/0/1        /dev/nvme0n1    disk           256GB NVMe disk
+/0/100/1c/0/1/1                      volume         1074MiB Windows FAT volume
+/0/100/1c/0/1/2      /dev/nvme0n1p2  volume         237GiB volume EXT4
+/0/100/1f                            bridge         Tiger Lake-LP LPC Controller
+/0/100/1f/0                          system         PnP device PNP0b00
+/0/100/1f/1                          input          PnP device PNP0303
+/0/100/1f/2                          generic        PnP device DLL0ab0
+/0/100/1f.3          card0           multimedia     Tiger Lake-LP Smart Sound Technology Audio Controller
+/0/100/1f.3/0        input16         input          HDA Intel PCH Headphone Mic
+/0/100/1f.3/1        input17         input          HDA Intel PCH HDMI/DP,pcm=3
+/0/100/1f.3/2        input18         input          HDA Intel PCH HDMI/DP,pcm=7
+/0/100/1f.3/3        input19         input          HDA Intel PCH HDMI/DP,pcm=8
+/0/100/1f.3/4        input20         input          HDA Intel PCH HDMI/DP,pcm=9
+/0/100/1f.4                          bus            Tiger Lake-LP SMBus Controller
+/0/100/1f.5                          bus            Tiger Lake-LP SPI Controller
+/1                                   power          DELL WV3K836
+/2                                   power          
+/3                   input0          input          Lid Switch
+/4                   input1          input          Power Button
+/5                   input11         input          Intel HID events
+/6                   input12         input          Intel HID 5 button array
+/7                   input13         input          Dell Privacy Driver
+/8                   input14         input          Dell WMI hotkeys
+/9                   input15         input          Video Bus
+/a                   input2          input          AT Translated Set 2 keyboard
+/b                   input4          input          PS/2 Generic Mouse
+/c                   input8          input          DELL0AB0:00 04F3:3147 Mouse
+/d                   input9          input          DELL0AB0:00 04F3:3147 Touchpad
