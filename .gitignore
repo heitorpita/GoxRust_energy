@@ -1,5 +1,9 @@
-# medicoes
+# medicoes: os csv por execucao que o implementacao.sh espalha em go/ e rust/
 *.csv
+# ...mas os consolidados na raiz sao o dado do relatorio e vao versionados
+!medicoes_garbriel.csv
+!medicoes_heitor.csv
+!medicoes_heitor2.csv
 
 # binarios compilados pelos scripts
 go/go_bin/
@@ -7,3 +11,11 @@ rust/rust_bin/
 
 # gerador das listas (compilado do geraEntrada.cpp)
 geracoes_listas/gera
+
+# artefatos gerados pela analise
+analise/__pycache__/
+*.ipynb_checkpoints/
+*:Zone.Identifier
+
+# ambiente virtual da analise
+.venv/
